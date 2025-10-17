@@ -25,7 +25,6 @@ const UsersContent = () => {
       const randomIndex = Math.floor(Math.random() * charset.length);
       password += charset[randomIndex];
     }
-    // Update the appropriate form based on which modal is open
     if (isModalOpen) {
       form.setFieldsValue({ password });
       if (passwordRef.current) passwordRef.current.input.value = password;
@@ -33,7 +32,7 @@ const UsersContent = () => {
       editForm.setFieldsValue({ password });
       if (editPasswordRef.current) editPasswordRef.current.input.value = password;
     }
-    console.log('Generated password (plaintext):', password); // Debug log
+    console.log('Generated password (plaintext):', password);
     message.success('Password generated successfully!');
   };
 
@@ -87,13 +86,13 @@ const UsersContent = () => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log('Submitting password to backend:', values.password); // Debug log
+      console.log('Submitting password to backend:', values.password);
       await Services.CreateAgent(values);
       const res = await Services.AgentList();
-      console.log('Received agent list with password:', res.data.data.map(agent => agent.password)); // Debug log
+      console.log('Received agent list with password:', res.data.data.map(agent => agent.password));
       const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key if id is missing
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       }));
       setUsers(formattedData);
       message.success('Agent created successfully!');
@@ -119,12 +118,14 @@ const UsersContent = () => {
       console.log('Sending update request for id:', id, 'with status:', newStatus);
       const response = await Services.UpdateAgentStatus(id, newStatus);
       console.log('Update response:', response.data);
+      // Fetch updated list but preserve original order
       const res = await Services.AgentList();
-      const formattedData = res.data.data.map((user) => ({
-        ...user,
-        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
-      }));
-      setUsers(formattedData);
+      const updatedData = res.data.data;
+      const updatedUsers = users.map(user => {
+        const updatedUser = updatedData.find(u => u.id === user.id);
+        return updatedUser ? { ...user, ...updatedUser, status: updatedUser.status } : user;
+      });
+      setUsers(updatedUsers);
       message.success(`Agent status updated to ${newStatus === 1 ? 'Active' : 'Inactive'}`);
     } catch (error) {
       message.error('Failed to update status');
@@ -147,7 +148,7 @@ const UsersContent = () => {
       const res = await Services.AgentList();
       const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       }));
       setUsers(formattedData);
       message.success('Agent updated successfully');
@@ -173,7 +174,7 @@ const UsersContent = () => {
       const res = await Services.AgentList();
       const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       }));
       setUsers(formattedData);
       message.success('Agent deleted successfully');
@@ -249,7 +250,7 @@ const UsersContent = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status, record) => {
-        console.log('Status render for id:', record.id, 'status:', status); // Debug log
+        console.log('Status render for id:', record.id, 'status:', status);
         return (
           <div className="flex items-center gap-2">
             <span>{status === 1 ? 'Active' : 'Inactive'}</span>
@@ -289,10 +290,10 @@ const UsersContent = () => {
     try {
       setLoading(true);
       const res = await Services.AgentList();
-      console.log('Initial fetch response:', res.data); // Debug log
+      console.log('Initial fetch response:', res.data);
       const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       }));
       setUsers(formattedData);
     } catch (error) {

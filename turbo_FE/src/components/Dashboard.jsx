@@ -90,7 +90,8 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout className="min-h-screen flex flex-col">
+   <div>
+     <Layout className="min-h-screen flex flex-col">
       <Sider
         trigger={null}
         collapsible
@@ -134,7 +135,7 @@ const Dashboard = () => {
             </h2>
           </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors">
+            <div className="flex items-center gap-3 cursor-pointer cursor-pointer px-3 py-2 rounded-lg transition-colors">
               <Avatar icon={<UserOutlined />} className="bg-blue-600" />
               <span className="font-medium hidden sm:inline text-white">{user?.username}</span>
             </div>
@@ -149,6 +150,10 @@ const Dashboard = () => {
 
       </Layout>
     </Layout>
+    <div className='fixed bottom-0 w-full'>
+        <Footer />
+    </div>
+   </div>
   );
 };
 
