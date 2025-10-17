@@ -33,7 +33,42 @@ const AgentController = {
         } catch (err) {
             return res.status(500).json({ message: 'Error updating status', error: err });
         }
+    },
+    async DeleteAgent(req, res) {
+    const { id } = req.params;
+
+    try {
+      console.log('Received delete request for id:', id);
+      const agent = await Agentlist.findByPk(id);
+      if (!agent) {
+        return res.status(404).json({ message: 'Agent not found' });
+      }
+      await agent.destroy();
+      console.log('Agent deleted for id:', id);
+      return res.status(200).json({ message: 'Agent deleted successfully' });
+    } catch (err) {
+      console.error('Error in DeleteAgent:', err);
+      return res.status(500).json({ message: 'Error deleting agent', error: err.message });
     }
+  },
+  async EditAgent(req, res) {
+    const { id } = req.params;
+    const { agent_name, email, password, dp_phone, target_id, agent_type } = req.body;
+
+    try {
+      console.log('Received edit request for id:', id, 'with data:', { agent_name, email, password, dp_phone, target_id, agent_type });
+      const agent = await Agentlist.findByPk(id);
+      if (!agent) {
+        return res.status(404).json({ message: 'Agent not found' });
+      }
+      await agent.update({ agent_name, email, password, dp_phone, target_id, agent_type });
+      console.log('Agent updated for id:', id);
+      return res.status(200).json({ message: 'Agent updated successfully', data: agent });
+    } catch (err) {
+      console.error('Error in EditAgent:', err);
+      return res.status(500).json({ message: 'Error updating agent', error: err.message });
+    }
+  }
     
 }
 module.exports = AgentController

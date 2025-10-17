@@ -1,7 +1,16 @@
 const Footer = () => {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-8">
-      <div className="px-6 py-4">
+    <footer
+      className="bg-white bg-red-500 border-gray-200 w-full"
+      style={{
+        height: '60px', // Fixed height
+        minHeight: '60px', // Ensures it doesn't shrink below this
+        display: 'flex',
+        alignItems: 'center', // Vertically centers content
+        width: '100%', // Ensures full width
+      }}
+    >
+      <div className="px-6 py-2 w-full">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-600 text-sm">
             © 2025 <span className="font-semibold">TURBO ADMIN</span>. All rights reserved.

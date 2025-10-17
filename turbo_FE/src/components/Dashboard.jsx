@@ -63,11 +63,6 @@ const Dashboard = () => {
       icon: <UserOutlined />,
       label: 'Users',
     },
-    {
-      key: '3',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-    },
   ];
 
   const renderContent = () => {
@@ -76,8 +71,6 @@ const Dashboard = () => {
         return <DashboardContent />;
       case '2':
         return <UsersContent />;
-      case '3':
-        return <SettingsContent />;
       default:
         return <DashboardContent />;
     }
@@ -97,7 +90,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout className="min-h-screen">
+    <Layout className="min-h-screen flex flex-col">
       <Sider
         trigger={null}
         collapsible
@@ -114,8 +107,8 @@ const Dashboard = () => {
           bottom: 0,
         }}
       >
-        <div className="h-16 flex items-center justify-center text-white text-xl font-bold border-b border-gray-800">
-          {collapsed ? 'TA' : 'TURBO ADMIN'}
+        <div className="h-16 flex items-center justify-center text-white text-xl border-b border-gray-800 font-thick">
+          {collapsed ? 'TA' : 'Turbo Admin'}
         </div>
         <Menu
           theme="dark"
@@ -127,7 +120,7 @@ const Dashboard = () => {
         />
       </Sider>
 
-      <Layout style={{ marginLeft: collapsed ? 0 : 200 }} className="transition-all duration-200">
+      <Layout style={{ marginLeft: collapsed ? 0 : 200 }} className="transition-all duration-200 flex flex-col">
         <Header className="bg-white shadow-md px-6 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-4">
             <button
@@ -148,13 +141,12 @@ const Dashboard = () => {
           </Dropdown>
         </Header>
 
-        <Content className="m-4 sm:m-6 min-h-[calc(100vh-140px)]">
-          <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+        <Content className="m-4 sm:m-6 flex-1">
+          <div className="bg-gray-50 p-4 sm:p-6 rounded-lg h-full">
             {renderContent()}
           </div>
         </Content>
 
-        <Footer />
       </Layout>
     </Layout>
   );

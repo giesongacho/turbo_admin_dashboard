@@ -16,10 +16,20 @@ const CreateAgent = (data) => {
 const UpdateAgentStatus = (id, status) => {
   return api.put(`/status/${id}`, { status });
 };
+const DeleteAgent = (id) => {
+  console.log('API call to delete agent:', id);
+  return api.delete(`/delete/${id}`);
+};
 
+const EditAgent = (id, data) => {
+  console.log('API call to edit agent:', id, data);
+  return api.put(`/edit/${id}`, data);
+};
 const AgentServices = {
     AgentList,
     CreateAgent,
-    UpdateAgentStatus
+    UpdateAgentStatus,
+    DeleteAgent,
+    EditAgent
 }
 export default AgentServices;

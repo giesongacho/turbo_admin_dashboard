@@ -1,0 +1,24 @@
+{
+  "name": "turbo_admin_dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"cd turbo_BE && node server.js\" \"cd turbo_FE && npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giesongacho/turbo_admin_dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/giesongacho/turbo_admin_dashboard/issues"
+  },
+  "homepage": "https://github.com/giesongacho/turbo_admin_dashboard#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

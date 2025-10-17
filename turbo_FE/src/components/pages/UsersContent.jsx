@@ -1,16 +1,76 @@
 import { Card, Table, Tag, Avatar, Button, Input, Space, Modal, Form, Select, message, Switch } from 'antd';
-import { UserOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useState, useEffect } from 'react';
+import { UserOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
+import { useState, useEffect, useRef } from 'react';
 import Services from '../../services/agentServices';
+import Footer from '../Footer';
 
 const UsersContent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [deletingAgentId, setDeletingAgentId] = useState(null);
+
+  // Function to generate a random password
+  const generatePassword = () => {
+    console.log('Generate button clicked');
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      password += charset[randomIndex];
+    }
+    // Update the appropriate form based on which modal is open
+    if (isModalOpen) {
+      form.setFieldsValue({ password });
+      if (passwordRef.current) passwordRef.current.input.value = password;
+    } else if (editModalOpen) {
+      editForm.setFieldsValue({ password });
+      if (editPasswordRef.current) editPasswordRef.current.input.value = password;
+    }
+    console.log('Generated password (plaintext):', password); // Debug log
+    message.success('Password generated successfully!');
+  };
+
+  // Function to copy password to clipboard with fallback
+  const copyToClipboard = (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        message.success('Password copied to clipboard!');
+      }).catch(err => {
+        message.error('Failed to copy password');
+        console.error('Clipboard error:', err);
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  };
+
+  // Fallback copy function using a temporary textarea
+  const fallbackCopy = (text) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      message.success('Password copied to clipboard!');
+    } catch (err) {
+      message.error('Failed to copy password');
+      console.error('Fallback copy error:', err);
+    }
+    document.body.removeChild(textArea);
+  };
 
   const showModal = () => {
     setIsModalOpen(true);
+    form.resetFields();
   };
 
   const handleCancel = () => {
@@ -18,19 +78,26 @@ const UsersContent = () => {
     form.resetFields();
   };
 
+  const handleEditCancel = () => {
+    setEditModalOpen(false);
+    setEditingAgent(null);
+    editForm.resetFields();
+  };
+
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      await Services.CreateAgent({ ...values, status: 1 });
+      console.log('Submitting password to backend:', values.password); // Debug log
+      await Services.CreateAgent(values);
       const res = await Services.AgentList();
-      const formattedData = res.data.data.map((user, index) => ({
+      console.log('Received agent list with password:', res.data.data.map(agent => agent.password)); // Debug log
+      const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || index + 1,
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key if id is missing
       }));
       setUsers(formattedData);
       message.success('Agent created successfully!');
       setIsModalOpen(false);
-      form.resetFields();
     } catch (error) {
       message.error('Failed to create agent');
       console.error('Error creating agent:', error);
@@ -46,14 +113,16 @@ const UsersContent = () => {
       return;
     }
     setLoading(true);
+    console.log('Starting toggle for id:', id, 'from', currentStatus, 'to', currentStatus === 1 ? 0 : 1);
     try {
       const newStatus = currentStatus === 1 ? 0 : 1;
-      const response = await Services.UpdateAgentStatus(id, newStatus); // Capture response
+      console.log('Sending update request for id:', id, 'with status:', newStatus);
+      const response = await Services.UpdateAgentStatus(id, newStatus);
       console.log('Update response:', response.data);
       const res = await Services.AgentList();
-      const formattedData = res.data.data.map((user, index) => ({
+      const formattedData = res.data.data.map((user) => ({
         ...user,
-        key: user.id || index + 1,
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
       }));
       setUsers(formattedData);
       message.success(`Agent status updated to ${newStatus === 1 ? 'Active' : 'Inactive'}`);
@@ -63,6 +132,64 @@ const UsersContent = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (id, record) => {
+    setEditingAgent(record);
+    setEditModalOpen(true);
+    editForm.setFieldsValue(record);
+  };
+
+  const handleEditSubmit = async (values) => {
+    setLoading(true);
+    try {
+      await Services.EditAgent(editingAgent.id, values);
+      const res = await Services.AgentList();
+      const formattedData = res.data.data.map((user) => ({
+        ...user,
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+      }));
+      setUsers(formattedData);
+      message.success('Agent updated successfully');
+      setEditModalOpen(false);
+      setEditingAgent(null);
+    } catch (error) {
+      message.error('Failed to update agent');
+      console.error('Error updating agent:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = (id) => {
+    setDeletingAgentId(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setLoading(true);
+    try {
+      await Services.DeleteAgent(deletingAgentId);
+      const res = await Services.AgentList();
+      const formattedData = res.data.data.map((user) => ({
+        ...user,
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+      }));
+      setUsers(formattedData);
+      message.success('Agent deleted successfully');
+    } catch (err) {
+      console.log(err);
+      message.error('Failed to delete agent');
+    } finally {
+      setLoading(false);
+      setDeleteModalOpen(false);
+      setDeletingAgentId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setDeletingAgentId(null);
   };
 
   const columns = [
@@ -101,10 +228,28 @@ const UsersContent = () => {
       ),
     },
     {
+      title: 'Password',
+      dataIndex: 'password',
+      key: 'password',
+      render: (password, record) => (
+        <Space>
+          <span>{password ? password : 'Decryption failed'}</span>
+          {password && (
+            <Button
+              icon={<CopyOutlined />}
+              onClick={() => copyToClipboard(password)}
+              size="small"
+            />
+          )}
+        </Space>
+      ),
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status, record) => {
+        console.log('Status render for id:', record.id, 'status:', status); // Debug log
         return (
           <div className="flex items-center gap-2">
             <span>{status === 1 ? 'Active' : 'Inactive'}</span>
@@ -121,38 +266,52 @@ const UsersContent = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: () => (
+      render: (_, record) => (
         <Space>
-          <Button type="text" icon={<EditOutlined />} className="text-blue-600" />
-          <Button type="text" icon={<DeleteOutlined />} className="text-red-600" />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            className="text-blue-600"
+            onClick={() => handleEdit(record.id, record)}
+          />
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            className="text-red-600"
+            onClick={() => handleDelete(record.id)}
+          />
         </Space>
       ),
     },
   ];
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        setLoading(true);
-        const res = await Services.AgentList();
-        const formattedData = res.data.data.map((user, index) => ({
-          ...user,
-          key: user.id || index + 1,
-        }));
-        setUsers(formattedData);
-      } catch (error) {
-        console.error('Error fetching agents:', error);
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const res = await Services.AgentList();
+      console.log('Initial fetch response:', res.data); // Debug log
+      const formattedData = res.data.data.map((user) => ({
+        ...user,
+        key: user.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Fallback to unique temp key
+      }));
+      setUsers(formattedData);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAgents();
   }, []);
 
+  const passwordRef = useRef(null);
+  const editPasswordRef = useRef(null);
+
   return (
-    <>
+    <div className="">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold text-gray-800">Users Management</h3>
@@ -196,9 +355,19 @@ const UsersContent = () => {
           <Form.Item
             label="Password"
             name="password"
-            rules={[{ required: true, message: 'Please enter password' }, { min: 6, message: 'Password must be at least 6 characters' }]}
+            rules={[{ required: true, message: 'Please generate a password' }, { min: 6, message: 'Password must be at least 6 characters' }]}
           >
-            <Input.Password placeholder="Enter password" size="large" />
+            <Space>
+              <Input.Password
+                ref={passwordRef}
+                placeholder="Click 'Generate' to create a password"
+                size="large"
+                readOnly
+              />
+              <Button type="primary" icon={<PlusOutlined />} onClick={generatePassword}>
+                Generate
+              </Button>
+            </Space>
           </Form.Item>
 
           <Form.Item
@@ -251,6 +420,116 @@ const UsersContent = () => {
         </Form>
       </Modal>
 
+      <Modal
+        title="Edit Agent"
+        open={editModalOpen}
+        onCancel={handleEditCancel}
+        footer={null}
+        centered
+        width={600}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEditSubmit}
+          className="mt-4"
+        >
+          <Form.Item
+            label="Agent Name"
+            name="agent_name"
+            rules={[{ required: true, message: 'Please enter agent name' }, { min: 2, message: 'Agent name must be at least 2 characters' }]}
+          >
+            <Input placeholder="Enter agent name" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true, message: 'Please enter email' }, { type: 'email', message: 'Please enter a valid email' }]}
+          >
+            <Input placeholder="Enter email address" size="large" type="email" />
+          </Form.Item>
+
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: 'Please enter or generate a password' }, { min: 6, message: 'Password must be at least 6 characters' }]}
+          >
+            <Space>
+              <Input.Password
+                ref={editPasswordRef}
+                placeholder="Enter or generate a new password"
+                size="large"
+              />
+              <Button type="primary" icon={<PlusOutlined />} onClick={generatePassword}>
+                Generate
+              </Button>
+            </Space>
+          </Form.Item>
+
+          <Form.Item
+            label="Phone Number"
+            name="dp_phone"
+            rules={[{ required: true, message: 'Please enter phone number' }]}
+          >
+            <Input placeholder="Enter phone number" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Target ID"
+            name="target_id"
+            rules={[{ required: true, message: 'Please enter target ID' }]}
+          >
+            <Input placeholder="Enter target ID" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Agent Type"
+            name="agent_type"
+            rules={[{ required: true, message: 'Please select agent type' }]}
+          >
+            <Select
+              placeholder="Select agent type"
+              size="large"
+              options={[
+                { value: 'hq', label: 'HQ' },
+                { value: 'wfh', label: 'WFH' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0 mt-6">
+            <Space className="w-full justify-end">
+              <Button onClick={handleEditCancel} size="large">
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                size="large"
+                className="bg-blue-600"
+              >
+                Update Agent
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Confirm Delete"
+        open={deleteModalOpen}
+        onOk={confirmDelete}
+        onCancel={cancelDelete}
+        okText="Delete"
+        cancelText="Cancel"
+        centered
+        width={400}
+      >
+        <p>Are you sure you want to delete the agent?</p>
+      </Modal>
+
       <Card className="shadow-sm">
         <div className="mb-4">
           <Input
@@ -269,7 +548,7 @@ const UsersContent = () => {
           rowKey="key"
         />
       </Card>
-    </>
+    </div>
   );
 };
 

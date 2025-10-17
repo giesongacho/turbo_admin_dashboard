@@ -4,34 +4,66 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import Services from '../../services/agentServices';
 
 const DashboardContent = () => {
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const res = await Services.AgentList();
+      console.log('Dashboard fetch response:', res.data);
+      const formattedData = res.data.data.map((user, index) => ({
+        ...user,
+        key: user.id || index + 1,
+      }));
+      setAgents(formattedData);
+    } catch (error) {
+      console.error('Error fetching agents for dashboard:', error);
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const totalAgents = agents.length;
+  const activeAgents = agents.filter(agent => agent.status === 1).length;
+  const inactiveAgents = agents.filter(agent => agent.status === 0).length;
+  const wfhAgents = agents.filter(agent => agent.agent_type === 'wfh').length;
+
   return (
-    <>
+    <div className='h-[70vh]'>
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-800">
           Welcome back, admin! 👋
         </h3>
-        <p className="text-gray-600">Here's what's happening with your account today.</p>
+        <p className="text-gray-600">Here's what's happening with your agents today.</p>
       </div>
 
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={24} sm={12} lg={6}>
           <Card hoverable>
             <Statistic
-              title={<span className="text-gray-600">Total Users</span>}
-              value={1128}
+              title={<span className="text-gray-600">Total Agents</span>}
+              value={totalAgents}
               prefix={<UserOutlined className="text-green-600" />}
               valueStyle={{ color: '#16a34a', fontSize: '28px', fontWeight: 'bold' }}
-              suffix={<ArrowUpOutlined />}
+              suffix={totalAgents > 0 ? <ArrowUpOutlined /> : null}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card hoverable>
             <Statistic
-              title={<span className="text-gray-600">Active Sessions</span>}
-              value={93}
+              title={<span className="text-gray-600">Active Agents</span>}
+              value={activeAgents}
               valueStyle={{ color: '#2563eb', fontSize: '28px', fontWeight: 'bold' }}
             />
           </Card>
@@ -39,60 +71,43 @@ const DashboardContent = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card hoverable>
             <Statistic
-              title={<span className="text-gray-600">Revenue</span>}
-              value={9280}
-              prefix="$"
-              valueStyle={{ color: '#16a34a', fontSize: '28px', fontWeight: 'bold' }}
-              suffix={<ArrowUpOutlined />}
+              title={<span className="text-gray-600">Inactive Agents</span>}
+              value={inactiveAgents}
+              valueStyle={{ color: '#dc2626', fontSize: '28px', fontWeight: 'bold' }}
+              suffix={inactiveAgents > 0 ? <ArrowDownOutlined /> : null}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card hoverable>
             <Statistic
-              title={<span className="text-gray-600">Bounce Rate</span>}
-              value={2.7}
-              suffix="%"
-              valueStyle={{ color: '#dc2626', fontSize: '28px', fontWeight: 'bold' }}
-              prefix={<ArrowDownOutlined />}
+              title={<span className="text-gray-600">WFH Agents</span>}
+              value={wfhAgents}
+              valueStyle={{ color: '#16a34a', fontSize: '28px', fontWeight: 'bold' }}
+              suffix={wfhAgents > 0 ? <ArrowUpOutlined /> : null}
             />
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card title="Recent Activity" className="h-full shadow-sm">
+        <Col xs={24} lg={32}>
+          <Card title="Recent Agent Activity" className="h-full shadow-sm">
             <div className="space-y-4">
-              {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              {agents.map((agent) => (
+                <div key={agent.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <Avatar size={45} icon={<UserOutlined />} className="bg-blue-500" />
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800">User Activity {item}</p>
-                    <p className="text-sm text-gray-500">2 hours ago</p>
+                    <p className="font-semibold text-gray-800">{agent.agent_name}</p>
+                    <p className="text-sm text-gray-500">{agent.email} | {agent.dp_phone} | {agent.target_id} | {agent.agent_type.toUpperCase()} | {agent.status === 1 ? 'Active' : 'Inactive'}</p>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
         </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Quick Actions" className="h-full shadow-sm">
-            <div className="space-y-3">
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors">
-                Add New User
-              </button>
-              <button className="w-full bg-white hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg border border-gray-300 transition-colors">
-                Generate Report
-              </button>
-              <button className="w-full bg-white hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg border border-gray-300 transition-colors">
-                View Analytics
-              </button>
-            </div>
-          </Card>
-        </Col>
       </Row>
-    </>
+    </div>
   );
 };
 
